@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Points Tracker & Minecraft</title>
+    <style>
+        /* Global Styles */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        /* Tab System */
+        .tab-container {
+            display: flex;
+            background-color: #333;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            color: white;
+            cursor: pointer;
+            background-color: #555;
+            border: none;
+            font-size: 16px;
+        }
+        
+        .tab.active {
+            background-color: #4361ee;
+        }
+        
+        /* Content Areas */
+        .content {
+            display: none;
+            padding: 20px;
+        }
+        
+        .content.active {
+            display: block;
+        }
+        
+        /* Points Tracker Styles */
+        .points-tracker {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .person {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            background-color: white;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        
+        .points {
+            font-weight: bold;
+            margin: 0 15px;
+            min-width: 60px;
+            text-align: center;
+            color: #4361ee;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 3px;
+            font-weight: 500;
+        }
+        
+        .btn-add {
+            background-color: #4CAF50;
+        }
+        
+        .btn-remove {
+            background-color: #f44336;
+        }
+        
+        .btn-delete {
+            background-color: #6c757d;
+        }
+        
+        /* Minecraft Game Styles */
+        .minecraft-game {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 60px);
+            background-color: #87CEEB;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        #minecraft-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .block-type {
+            width: 40px;
+            height: 40px;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+        
+        .block-type.selected {
+            border-color: yellow;
+        }
+        
+        #mode-toggle {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        #mode-toggle.break-mode {
+            background-color: #f44336;
+        }
+        
+        #block-selector {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40px;
+            background-color: #8B4513;
+            z-index: 1;
+        }
+        
+        .block {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+        
+        .block:hover {
+            filter: brightness(1.2);
+        }
+        
+        #minecraft-email {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            z-index: 100;
+        }
+        
+        .notification {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+        <button class="tab active" onclick="openTab('points-tracker')">Points Tracker</button>
+        <button class="tab" onclick="openTab('minecraft-game')">Minecraft Game</button>
+    </div>
+    
+    <!-- Points Tracker Content -->
+    <div id="points-tracker" class="content active">
+        <div class="points-tracker">
+            <h2>Team Points Tracker</h2>
+            <div class="input-group">
+                <input type="email" id="userEmail" placeholder="Enter your email to save/load">
+                <button class="btn btn-add" onclick="saveData()">Save Data</button>
+                <button class="btn btn-add" onclick="loadData()">Load Data</button>
+            </div>
+            <div id="notification" class="notification"></div>
+            
+            <div id="peopleList"></div>
+            
+            <div class="input-group">
+                <input type="text" id="newPersonName" placeholder="Enter team member name">
+                <button class="btn btn-add" onclick="addPerson()">Add Member</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Minecraft Game Content -->
+    <div id="minecraft-game" class="content">
+        <div class="minecraft-game">
+            <div id="game-container">
+                <div id="ground"></div>
+                <div id="minecraft-email">
+                    <input type="email" id="minecraft-email-input" placeholder="Email to save builds">
+                    <button class="btn btn-add" onclick="saveMinecraftBuild()">Save Build</button>
+                    <button class="btn btn-add" onclick="loadMinecraftBuild()">Load Build</button>
+                    <div id="minecraft-notification" class="notification"></div>
+                </div>
+                <div id="minecraft-controls">
+                    <div id="block-selector">
+                        <div class="block-type selected" style="background-color: #964B00;" data-type="wood"></div>
+                        <div class="block-type" style="background-color: #808080;" data-type="stone"></div>
+                        <div class="block-type" style="background-color: #00FF00;" data-type="grass"></div>
+                        <div class="block-type" style="background-color: #ADD8E6;" data-type="glass"></div>
+                    </div>
+                    <button id="mode-toggle">Place Mode (Click to Switch)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab System Functionality
+        function openTab(tabName) {
+            const tabs = document.getElementsByClassName('tab');
+            const contents = document.getElementsByClassName('content');
+            
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+                contents[i].classList.remove('active');
+            }
+            
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+        
+        // ===== POINTS TRACKER FUNCTIONALITY =====
+        let people = [
+            { name: "EMPIRE", points: 0 },
+            { name: "jeriye", points: 0 },
+            { name: "Mahq", points: 0 },
+            { name: "Ryan", points: 0 },
+            { name: "sour", points: 0 }
+        ];
+        
+        const notificationEl = document.getElementById('notification');
+        
+        function showNotification(message, isSuccess) {
+            notificationEl.textContent = message;
+            notificationEl.className = `notification ${isSuccess ? 'success' : 'error'}`;
+            notificationEl.style.display = 'block';
+            
+            setTimeout(() => {
+                notificationEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        function saveData() {
+            const email = document.getElementById('userEmail').value.trim();
+            
+            if (!email) {
+                showNotification('Please enter your email address', false);
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showNotification('Please enter a valid email address', false);
+                return;
+            }
+            
+            const dataToSave = {
+                people: people,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem(`pointsData_${email}`, JSON.stringify(dataToSave));
+            showNotification('Data saved successfully!', true);
+        }
+        
+        function loadData() {
+            const email = document.getElementById('userEmail').value.trim();
+            
+            if (!email) {
+                showNotification('Please enter your email address', false);
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showNotification('Please enter a valid email address', false);
+                return;
+            }
+            
+            const savedData = localStorage.getItem(`pointsData_${email}`);
+            
+            if (!savedData) {
+                showNotification('No saved data found for this email', false);
+                return;
+            }
+            
+            try {
+                const parsedData = JSON.parse(savedData);
+                people = parsedData.people || [];
+                renderPeople();
+                showNotification('Data loaded successfully!', true);
+            } catch (e) {
+                showNotification('Error loading data', false);
+                console.error(e);
+            }
+        }
+        
+        function renderPeople() {
+            const list = document.getElementById('peopleList');
+            
+            if (people.length === 0) {
+                list.innerHTML = `<div style="text-align: center; padding: 20px; color: #666;">
+                    <p>No team members added yet.</p>
+                    <p>Add your first team member above to get started!</p>
+                </div>`;
+                return;
+            }
+            
+            list.innerHTML = '';
+            
+            people.forEach((person, index) => {
+                const div = document.createElement('div');
+                div.className = 'person';
+                
+                div.innerHTML = `
+                    <span>${person.name}</span>
+                    <div class="controls">
+                        <button class="btn btn-remove" onclick="removePoint(${index})">-1</button>
+                        <span class="points">${person.points} pts</span>
+                        <button class="btn btn-add" onclick="addPoint(${index})">+1</button>
+                        <button class="btn btn-add" onclick="addPoint(${index}, 5)">+5</button>
+                        <button class="btn btn-delete" onclick="removePerson(${index})">×</button>
+                    </div>
+                `;
+                
+                list.appendChild(div);
+            });
+        }
+        
+        function addPoint(index, amount = 1) {
+            people[index].points += amount;
+            renderPeople();
+        }
+        
+        function removePoint(index, amount = 1) {
+            people[index].points = Math.max(0, people[index].points - amount);
+            renderPeople();
+        }
+        
+        function addPerson() {
+            const nameInput = document.getElementById('newPersonName');
+            const name = nameInput.value.trim();
+            
+            if (name) {
+                people.push({ name, points: 0 });
+                nameInput.value = '';
+                renderPeople();
+                nameInput.focus();
+            }
+        }
+        
+        function removePerson(index) {
+            if (confirm(`Remove ${people[index].name} from the team?`)) {
+                people.splice(index, 1);
+                renderPeople();
+            }
+        }
+        
+        // Initialize points tracker
+        renderPeople();
+        
+        // ===== MINECRAFT GAME FUNCTIONALITY =====
+        const gameState = {
+            blocks: [],
+            selectedBlockType: 'wood',
+            isBreakMode: false
+        };
+        
+        const gameContainer = document.getElementById('game-container');
+        const blockSelector = document.getElementById('block-selector');
+        const modeToggle = document.getElementById('mode-toggle');
+        const blockTypes = document.querySelectorAll('.block-type');
+        const minecraftNotification = document.getElementById('minecraft-notification');
+        
+        function showMinecraftNotification(message, isSuccess) {
+            minecraftNotification.textContent = message;
+            minecraftNotification.className = `notification ${isSuccess ? 'success' : 'error'}`;
+            minecraftNotification.style.display = 'block';
+            
+            setTimeout(() => {
+                minecraftNotification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Block selection
+        blockTypes.forEach(block => {
+            block.addEventListener('click', () => {
+                document.querySelector('.block-type.selected').classList.remove('selected');
+                block.classList.add('selected');
+                gameState.selectedBlockType = block.dataset.type;
+            });
+        });
+        
+        // Mode toggle
+        modeToggle.addEventListener('click', () => {
+            gameState.isBreakMode = !gameState.isBreakMode;
+            modeToggle.textContent = gameState.isBreakMode ? 
+                "Break Mode (Click to Switch)" : "Place Mode (Click to Switch)";
+            modeToggle.classList.toggle('break-mode');
+        });
+        
+        // Handle clicks in the game world
+        gameContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('block-type') || 
+                e.target.id === 'minecraft-email-input' ||
+                e.target.tagName === 'BUTTON') return;
+            
+            const blockSize = 40;
+            // Fixed: Get correct click position relative to game container
+            const rect = gameContainer.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / blockSize) * blockSize;
+            const y = Math.floor((e.clientY - rect.top) / blockSize) * blockSize;
+            
+            // Don't place below ground
+            if (y + blockSize > rect.height - 40) return;
+            
+            if (gameState.isBreakMode) {
+                // Break mode - remove block if clicked
+                const elements = document.elementsFromPoint(e.clientX, e.clientY);
+                const blockToRemove = elements.find(el => el.classList.contains('block'));
+                if (blockToRemove) {
+                    gameContainer.removeChild(blockToRemove);
+                    gameState.blocks = gameState.blocks.filter(b => b !== blockToRemove);
+                }
+            } else {
+                // Place mode - add new block
+                const block = document.createElement('div');
+                block.className = 'block';
+                block.style.left = x + 'px';
+                block.style.top = y + 'px';
+                
+                // Set block color based on type
+                switch(gameState.selectedBlockType) {
+                    case 'wood':
+                        block.style.backgroundColor = '#964B00';
+                        break;
+                    case 'stone':
+                        block.style.backgroundColor = '#808080';
+                        break;
+                    case 'grass':
+                        block.style.backgroundColor = '#00FF00';
+                        break;
+                    case 'glass':
+                        block.style.backgroundColor = '#ADD8E6';
+                        block.style.opacity = '0.7';
+                        break;
+                }
+                
+                gameContainer.appendChild(block);
+                gameState.blocks.push(block);
+            }
+        });
+        
+        // Save Minecraft build
+        function saveMinecraftBuild() {
+            const email = document.getElementById('minecraft-email-input').value.trim();
+            
+            if (!email) {
+                showMinecraftNotification('Please enter your email address', false);
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showMinecraftNotification('Please enter a valid email address', false);
+                return;
+            }
+            
+            const blocksData = Array.from(gameState.blocks).map(block => {
+                return {
+                    type: getBlockTypeFromColor(block.style.backgroundColor),
+                    x: parseInt(block.style.left),
+                    y: parseInt(block.style.top)
+                };
+            });
+            
+            const dataToSave = {
+                blocks: blocksData,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem(`minecraftBuild_${email}`, JSON.stringify(dataToSave));
+            showMinecraftNotification('Build saved successfully!', true);
+        }
+        
+        // Load Minecraft build
+        function loadMinecraftBuild() {
+            const email = document.getElementById('minecraft-email-input').value.trim();
+            
+            if (!email) {
+                showMinecraftNotification('Please enter your email address', false);
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showMinecraftNotification('Please enter a valid email address', false);
+                return;
+            }
+            
+            const savedData = localStorage.getItem(`minecraftBuild_${email}`);
+            
+            if (!savedData) {
+                showMinecraftNotification('No saved build found for this email', false);
+                return;
+            }
+            
+            try {
+                // Clear existing blocks (except ground)
+                gameState.blocks.forEach(block => {
+                    if (!block.isGround) {
+                        gameContainer.removeChild(block);
+                    }
+                });
+                
+                const parsedData = JSON.parse(savedData);
+                gameState.blocks = [];
+                
+                // Recreate ground
+                createGround();
+                
+                // Load saved blocks
+                parsedData.blocks.forEach(blockData => {
+                    const block = document.createElement('div');
+                    block.className = 'block';
+                    block.style.left = blockData.x + 'px';
+                    block.style.top = blockData.y + 'px';
+                    
+                    switch(blockData.type) {
+                        case 'wood':
+                            block.style.backgroundColor = '#964B00';
+                            break;
+                        case 'stone':
+                            block.style.backgroundColor = '#808080';
+                            break;
+                        case 'grass':
+                            block.style.backgroundColor = '#00FF00';
+                            break;
+                        case 'glass':
+                            block.style.backgroundColor = '#ADD8E6';
+                            block.style.opacity = '0.7';
+                            break;
+                    }
+                    
+                    gameContainer.appendChild(block);
+                    gameState.blocks.push(block);
+                });
+                
+                showMinecraftNotification('Build loaded successfully!', true);
+            } catch (e) {
+                showMinecraftNotification('Error loading build', false);
+                console.error(e);
+            }
+        }
+        
+        // Helper function to get block type from color
+        function getBlockTypeFromColor(color) {
+            switch(color) {
+                case 'rgb(150, 75, 0)':
+                    return 'wood';
+                case 'rgb(128, 128, 128)':
+                    return 'stone';
+                case 'rgb(0, 255, 0)':
+                    return 'grass';
+                case 'rgb(173, 216, 230)':
+                    return 'glass';
+                default:
+                    return 'wood';
+            }
+        }
+        
+        // Create initial ground blocks
+        function createGround() {
+            const groundHeight = 40;
+            const blockSize = 40;
+            const blocksWide = Math.ceil(gameContainer.clientWidth / blockSize);
+            
+            for (let i = 0; i < blocksWide; i++) {
+                const block = document.createElement('div');
+                block.className = 'block';
+                block.style.left = (i * blockSize) + 'px';
+                block.style.top = (gameContainer.clientHeight - groundHeight) + 'px';
+                block.style.backgroundColor = '#8B4513';
+                block.isGround = true;
+                gameContainer.appendChild(block);
+                gameState.blocks.push(block);
+            }
+        }
+        
+        // Initialize game
+        createGround();
+        
+        // Prevent context menu on right click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
